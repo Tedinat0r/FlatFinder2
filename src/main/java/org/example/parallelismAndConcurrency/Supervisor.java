@@ -19,13 +19,14 @@ public class Supervisor {
     private  ArrayList<HashMap<String, String>> outputQueue = new ArrayList<>();
     private ArrayList<Integer> ioRequestQueue = new ArrayList<>();
     private ExecutorService executorService = Executors.newCachedThreadPool();
+    private FSFactory fsFactory = new FSFactory();
 
     private void spawnThread(){
         for(String site: resultPages.keySet()){
             if(!threads.containsKey(site)){
                 int heapNumber = heap.size() - 1;
                 siteThreadMap.put(site, heapNumber);
-                ThreadManager manager = new ThreadManager(false, false, heapNumber);
+                ThreadManager manager = new ThreadManager(false, false, heapNumber, this.fsFactory);
                 manager.setCurrentInput(getInputMarkUp(site));
                 threads.put(heapNumber, manager);
                 Runnable task = manager::work;
