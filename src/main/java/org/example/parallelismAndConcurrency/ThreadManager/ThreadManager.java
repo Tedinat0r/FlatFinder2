@@ -1,10 +1,14 @@
 package org.example.parallelismAndConcurrency.ThreadManager;
 
 import org.example.parallelismAndConcurrency.FSFactory;
+import org.example.parallelismAndConcurrency.FieldStrategy.FieldStrategy;
+import org.example.parallelismAndConcurrency.PPTraverser;
 import org.example.parallelismAndConcurrency.RPTraverser;
 import org.example.parallelismAndConcurrency.Traverser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
@@ -16,7 +20,9 @@ public class ThreadManager {
     private ForkJoinPool forkJoinPool;
     private String currentInput = "";
     private ArrayList<String> markup = new ArrayList<>();
+    private HashMap<String, HashMap<String, String>> resultsCache = new HashMap<>();
     private FSFactory fsFactory;
+    private String site;
     public boolean hasParent = false;
     public boolean hasChild = false;
     public int treeID = -1;
@@ -50,8 +56,17 @@ public class ThreadManager {
                 *
                 */
                 for(int i = 1; i <= ((RPTraverser) traverser).resultCount; i++){
-                    ArrayList<String> fields = new ArrayList<>();
-                    ((RPTraverser) traverser).getFields(i).forEach(field -> {if(field != null){fields.add(field);}});
+                    HashMap<String, FieldStrategy> strategies = new HashMap<>();
+                    ((RPTraverser) traverser).getFields(i).forEach((k, v) -> {if(v == null){
+                                strategies.put(k, this.fsFactory.getFieldStrategy(site, k));
+                            }else{
+                                if(k.equals("address")){
+                                    resultsCache.put(k, new HashMap<>());
+                                }
+                                resultsCache.get(k).put(v, v);
+                            }
+                        }
+                    );
 
                 }
 

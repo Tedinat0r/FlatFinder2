@@ -10,7 +10,6 @@ import java.util.concurrent.Executors;
 
 public class Supervisor {
 
-
     private ArrayList<Integer> heap = new ArrayList<>();
     private HashMap<Integer, ThreadManager> threads = new HashMap<>();
     private HashMap<String, Integer> siteThreadMap = new HashMap<>();

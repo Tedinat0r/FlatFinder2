@@ -15,11 +15,8 @@ public class RPTraverser extends Traverser{
     private void addResult(int id, String markup){
         results.put(id, markup);
     }
-    public ArrayList<String> getFields(int id){
-        ArrayList<String> fields = new ArrayList<>();
-        ConcurrentHashMap<String, String> resultMap = resultFields.get(id);
-        resultMap.forEach((k, v) -> fields.add(v));
-        return fields;
+    public ConcurrentHashMap<String, String> getFields(int id){
+        return resultFields.get(id);
     };
 
 
