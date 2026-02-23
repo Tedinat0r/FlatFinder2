@@ -17,12 +17,15 @@ public class ThreadManager {
 
     private ArrayList<Traverser> Traversers;
     private CountDownLatch countDownLatch;
+    private int latchSize;
     private ForkJoinPool forkJoinPool;
     private String currentInput = "";
     private ArrayList<String> markup = new ArrayList<>();
+    // Results per page - Address, fields ¬
     private HashMap<String, HashMap<String, String>> resultsCache = new HashMap<>();
+    private HashMap<String, HashMap<Integer, Integer>> resultToPageMappings = new HashMap<>();
     private FSFactory fsFactory;
-    private String site;
+    public String site;
     public boolean hasParent = false;
     public boolean hasChild = false;
     public int treeID = -1;
@@ -34,7 +37,7 @@ public class ThreadManager {
         this.fsFactory = fsFactory;
     }
 
-    public boolean work(){
+    public boolean work() throws InterruptedException {
         int traverserRef = 0;
         for(String html: markup){
             if(traverserRef < Traversers.size()){
@@ -44,35 +47,67 @@ public class ThreadManager {
                 traverserRef++;
             }
         }
+
+        // Case of first run with no children, must wait for other RP traversers before I/O then spawn a child
+        countDownLatch.await();
+        boolean incomplete = false;
+        for(HashMap<String, String> map: resultsCache.values()){
+            for(String value: map.values()){
+                if(value.isEmpty()){incomplete = true;};
+            }
+            if(incomplete){
+                spawnChild();
+                break;
+            }
+        }
+
         return true;
     }
 
-    public void spawnChild(){
+    public void cacheResults(){
+        ArrayList<String> keys = new ArrayList<>();
         for(Traverser traverser: Traversers){
             if(traverser instanceof RPTraverser){
-                /*
-                * Check each result in hashmap of RP
-                * If any are "", then pass onto PP
-                *
-                */
                 for(int i = 1; i <= ((RPTraverser) traverser).resultCount; i++){
-                    HashMap<String, FieldStrategy> strategies = new HashMap<>();
-                    ((RPTraverser) traverser).getFields(i).forEach((k, v) -> {if(v == null){
-                                strategies.put(k, this.fsFactory.getFieldStrategy(site, k));
-                            }else{
+                    ((RPTraverser) traverser).getFields(i).forEach((k, v) -> {if(v == null)
                                 if(k.equals("address")){
                                     resultsCache.put(k, new HashMap<>());
-                                }
-                                resultsCache.get(k).put(v, v);
+                                    keys.add(k);
+                                }resultsCache.get(k).put(v, v);
                             }
+                        );
+                    }
+                }
+        }
+    }
+
+    public void spawnChild(){
+        ArrayList<String> keys = new ArrayList<>();
+        for(Traverser traverser: Traversers){
+            if(traverser instanceof RPTraverser){
+                for(int i = 1; i <= ((RPTraverser) traverser).resultCount; i++){
+                    ((RPTraverser) traverser).getFields(i).forEach((k, v) -> {if(v == null)
+                                if(k.equals("address")){
+                                    resultsCache.put(k, new HashMap<>());
+                                    keys.add(k);
+                                }resultsCache.get(k).put(v, v);
                         }
                     );
-
                 }
-
+                // Spawn new PP traverser with incomplete data, finds fields amongst all pages that have incomplete results
+            }else{
+                if(!resultsCache.isEmpty() && traverser instanceof PPTraverser){
+                    ((PPTraverser) traverser).clear();
+                    String currentKey = keys.removeFirst();
+                    ((PPTraverser) traverser).foundFields.addAll(
+                            resultsCache.get(currentKey).keySet()
+                    );
+                }
             }
         }
     }
+
+    private void distributeMarkup(){}
 
     public void addTraverser(){};
     public  int passLatchStatus(){return 1;};

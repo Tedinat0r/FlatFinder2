@@ -3,13 +3,21 @@ package org.example.parallelismAndConcurrency;
 import org.example.parallelismAndConcurrency.FieldStrategy.FieldStrategy;
 
 import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class PPTraverser extends Traverser  {
-    public PPTraverser(HashMap<String, FieldStrategy> registry, HashMap<String, HashMap<String, String>> fieldPatterns, CountDownLatch countDownLatch) {
-        super(registry, fieldPatterns, countDownLatch);
+    public PPTraverser(HashMap<String, FieldStrategy> registry, CountDownLatch countDownLatch) {
+        super(registry, countDownLatch);
     }
 
+    public Set<String> foundFields;
+
+    public void clear(){
+        registry.clear();
+        foundFields.clear();
+        inputMarkup = "";
+    }
     @Override
     public void compute(){}
 }

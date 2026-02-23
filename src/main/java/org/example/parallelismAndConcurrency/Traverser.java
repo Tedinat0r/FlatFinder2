@@ -10,15 +10,13 @@ import java.util.concurrent.RecursiveAction;
 
 public class Traverser extends RecursiveAction {
 
-    private CountDownLatch countDownLatch;
-    private HashMap<String, FieldStrategy> registry;
-    private HashMap<String, HashMap<String, String>> fieldPatterns;
-    private String entryPattern;
-    private String inputMarkup;
+    protected CountDownLatch countDownLatch;
+    protected HashMap<String, FieldStrategy> registry;
+    protected String entryPattern;
+    protected String inputMarkup;
 
-    public Traverser(HashMap<String, FieldStrategy> registry, HashMap<String, HashMap<String, String>> fieldPatterns, CountDownLatch countDownLatch){
+    public Traverser(HashMap<String, FieldStrategy> registry, CountDownLatch countDownLatch){
         this.registry = registry;
-        this.fieldPatterns = fieldPatterns;
         this.countDownLatch = countDownLatch;
     }
     public void setInputMarkup(String inputMarkup){this.inputMarkup = inputMarkup;}
