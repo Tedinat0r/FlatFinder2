@@ -22,4 +22,11 @@ public class markupCache {
         }
         return "";
     }
+    public void removePage(String site, int page){
+        this.data.get(site).remove(page);
+    }
+    public HashMap<Integer, HashMap<Integer, ArrayList<String>>> getPages(String site){
+        return data.get(site);
+    }
+
 }
