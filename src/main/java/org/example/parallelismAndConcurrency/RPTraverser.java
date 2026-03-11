@@ -22,8 +22,13 @@ public class RPTraverser extends Traverser{
 
 
 
-    public RPTraverser(HashMap<String, FieldStrategy> registry, CountDownLatch countDownLatch) {
-        super(registry, countDownLatch);
+    public RPTraverser(HashMap<String, FieldStrategy> registry) {
+        super(registry);
+    }
+    public void passResultNumbers(HashMap<String, Integer> target){
+        results.forEach((key, value) -> {
+            target.put(value, key);
+        });
     }
 
 

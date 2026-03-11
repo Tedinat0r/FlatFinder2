@@ -6,6 +6,7 @@ import org.example.parallelismAndConcurrency.PPTraverser;
 import org.example.parallelismAndConcurrency.RPTraverser;
 import org.example.parallelismAndConcurrency.Traverser;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -15,36 +16,42 @@ import java.util.concurrent.RecursiveAction;
 
 public class ThreadManager {
 
-    private ArrayList<Traverser> Traversers;
-    private CountDownLatch countDownLatch;
-    private int latchSize;
+    private ArrayList<Traverser> Traversers = new ArrayList<>();
     private ForkJoinPool forkJoinPool;
-    private String currentInput = "";
     private ArrayList<String> markup = new ArrayList<>();
     // Results per page - Address, fields ¬
     private HashMap<String, HashMap<String, String>> resultsCache = new HashMap<>();
+    private HashMap<String, FieldStrategy> strategyRegistry;
     // Address -> Result page number, preview number
-    private FSFactory fsFactory;
     public String site;
     public boolean hasParent = false;
     public boolean hasChild = false;
     public int treeID = -1;
     public int pageNumber = 0;
 
-    public ThreadManager(boolean isParent, boolean isChild, int treeID, FSFactory fsFactory, ArrayList<Traverser> traversers) {
+    public ThreadManager(boolean isParent, boolean isChild, int treeID, HashMap<String, FieldStrategy> strategyRegistry){
         this.hasChild = isParent ? true : false;
         this.hasParent = isChild ? true : false;
         this.treeID = treeID;
-        this.fsFactory = fsFactory;
-        this.Traversers = traversers;
+        this.strategyRegistry = strategyRegistry;
+
+        if(isParent) {
+            for (int i = 0; i < 4; i++) {
+                Traversers.add(new RPTraverser(strategyRegistry));
+            }
+        }
+        else if(isChild){
+            for(int i = 0; i < 4; i++) {
+                Traversers.add(new PPTraverser(strategyRegistry));
+            }
+        }
     }
 
     public void setCache(HashMap<String, HashMap<String, String>> cache){
         this.resultsCache = cache;
     }
-    public CountDownLatch getCountDownLatch(){
-        return this.countDownLatch;
-    }
+    public HashMap<String, FieldStrategy> getStrategies(){return this.strategyRegistry;}
+    public void setCountDownLatch(CountDownLatch countDownLatch){for(Traverser t : Traversers){t.setCountDownLatch(countDownLatch);}}
     public boolean work() throws InterruptedException {
 
         resultsCache.clear();
@@ -80,15 +87,20 @@ public class ThreadManager {
         }
         return this.resultsCache;
     }
-
+    public HashMap<String, Integer> getResultNumbers(){
+        HashMap<String, Integer> resultNumbers = new HashMap<>();
+        for(Traverser traverser: Traversers){
+            if(traverser instanceof RPTraverser){
+                ((RPTraverser) traverser).passResultNumbers(resultNumbers);
+            }
+        }
+        return resultNumbers;
+    }
 
     private void distributeMarkup(){}
 
     public void addTraverser(){};
     public  int passLatchStatus(){return 1;};
     public void abandonOperation(){};
-    public void setCurrentInput(String input){
-        currentInput = input;
-    }
     public void setMarkup(ArrayList<String> markup){ this.markup = markup; }
 }

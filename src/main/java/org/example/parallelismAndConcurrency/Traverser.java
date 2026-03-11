@@ -15,8 +15,10 @@ public class Traverser extends RecursiveAction {
     protected String entryPattern;
     protected String inputMarkup;
 
-    public Traverser(HashMap<String, FieldStrategy> registry, CountDownLatch countDownLatch){
+    public Traverser(HashMap<String, FieldStrategy> registry){
         this.registry = registry;
+    }
+    public void setCountDownLatch(CountDownLatch countDownLatch){
         this.countDownLatch = countDownLatch;
     }
     public void setInputMarkup(String inputMarkup){this.inputMarkup = inputMarkup;}

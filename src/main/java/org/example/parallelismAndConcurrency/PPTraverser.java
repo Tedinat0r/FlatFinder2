@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class PPTraverser extends Traverser  {
-    public PPTraverser(HashMap<String, FieldStrategy> registry, CountDownLatch countDownLatch) {
-        super(registry, countDownLatch);
+    public PPTraverser(HashMap<String, FieldStrategy> registry) {
+        super(registry);
     }
 
     public Set<String> foundFields;

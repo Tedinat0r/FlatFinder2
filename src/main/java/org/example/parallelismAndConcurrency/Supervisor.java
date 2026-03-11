@@ -24,27 +24,36 @@ public class Supervisor {
     // Address -> Result page number, preview number
     private HashMap<String, ArrayList<Integer>> resultToPageMappings = new HashMap<>();
     private ArrayList<HashMap<String, String>> outputQueue = new ArrayList<>();
-    private ArrayList<Integer> ioRequestQueue = new ArrayList<>();
-    private ArrayList<Integer> writeQueue = new ArrayList<>();
     private ExecutorService executorService = Executors.newCachedThreadPool();
     private FSFactory fsFactory = new FSFactory();
 
-    // Using return value is optional here
+    public Supervisor(ArrayList<String> sites, markupCache cache, ArrayList<String> fieldNames){
+        this.cache = cache;
+        HashMap<String, HashMap<String, FieldStrategy>> fieldStrategies = new HashMap<>();
+        sites.forEach(site -> {
+            HashMap<Integer, HashMap<Integer, ArrayList<String>>> sitePages = this.cache.getPages(site);
+            HashMap<String, FieldStrategy> siteStrategies = new HashMap<>();
+            fieldNames.forEach(fieldName -> {siteStrategies.put(fieldName,
+                    this.fsFactory.getFieldStrategy(site, fieldName));});
+            fieldStrategies.put(site, siteStrategies);
+            ThreadManager manager = this.spawnThread(site, true, fieldStrategies.get(site)).get();
+            feedMarkup(manager, sitePages.size() / 4);
+        });
 
 
-
-    private Optional<ThreadManager> spawnThread(String site, boolean passManager){
-        if(!siteThreadMap.containsKey(site) && passManager){
-            int heapNumber = heap.size() - 1;
+    }
+    private Optional<ThreadManager> spawnThread(String site, boolean passManager, HashMap<String, FieldStrategy> fieldStrategies){
+        int heapNumber = heap.size() - 1;
+        ThreadManager manager = new ThreadManager(true, false, heapNumber, fieldStrategies);
+        threads.put(heapNumber, manager);
+        heap.addLast(1);
+        heap.addLast(0);
+        if(!siteThreadMap.containsKey(site)){
             siteThreadMap.put(site, new ArrayList<>(heapNumber));
-            ThreadManager manager = new ThreadManager(true, false, heapNumber, this.fsFactory, new ArrayList<Traverser>());
-            manager.setCurrentInput(getInputMarkUp(site));
-            threads.put(heapNumber, manager);
-            heap.addLast(1);
-            heap.addLast(0);
-            return Optional.of(manager);
-        }else{return Optional.empty();}
-
+        }else{
+            siteThreadMap.get(site).add(heapNumber);
+        }
+        return passManager ? Optional.of(manager) : Optional.empty();
     };
 
     private void filterResults(HashMap<String, HashMap<String, String>> results){
@@ -63,7 +72,8 @@ public class Supervisor {
     private void createChild(int parentPosition){
         ThreadManager parent = threads.get(parentPosition);
         String site = parent.site;
-        Optional<ThreadManager> manager = spawnThread(site, true);
+        int newLatchCount = this.siteThreadMap.get(site).size() + 1;
+        Optional<ThreadManager> manager = spawnThread(site, true, parent.getStrategies());
         if(manager.isPresent()){
             int childPosition = heap.size() - 1;
             HashMap<String, HashMap<String, String>> cachedResults = parent.cacheResults();
@@ -76,19 +86,37 @@ public class Supervisor {
                 );
             });
             // Arbitrary number at the moment, but will correspond to average results per page on a given site
-            ArrayList<Traverser> traversers = new ArrayList<>();
-            CountDownLatch countDownLatch = manager.get().getCountDownLatch();
-            for(int i = 0; i < 8; i++){
-                traversers.add(new PPTraverser(registry, countDownLatch));
-            }
-            ThreadManager child = new ThreadManager(false, true, parentPosition + 1, this.fsFactory, traversers);
+            CountDownLatch countDownLatch = new CountDownLatch(newLatchCount);
+            ThreadManager child = new ThreadManager(false, true, parentPosition + 1, registry);
             threads.put(parentPosition + 1, child);
+            manager.get().setCountDownLatch(countDownLatch);
+            child.setCountDownLatch(countDownLatch);
         }
     }
     private String getInputMarkUp(String site){
         String markup = resultPages.get(site).getFirst();
         resultPages.get(site).removeFirst();
         return markup;
+    }
+
+    private void feedMarkup(ThreadManager manager, int amount){
+        ArrayList<String> markup = new ArrayList<>();
+        for(int i = 0; i < amount; i++){
+            markup.add(this.getInputMarkUp(manager.site));
+        }
+        manager.setMarkup(markup);
+    }
+
+    private void feedChild(ThreadManager parent, ThreadManager child, HashMap<String, HashMap<String, String>> results){
+        HashMap<String, Integer> resultsEnum = parent.getResultNumbers();
+        int pageNumber = parent.pageNumber;
+        String site = parent.site;
+        ArrayList<String> incompleteResults = new ArrayList<>();
+        results.keySet().forEach(key -> {
+            int resultNum = resultsEnum.get(key);
+            incompleteResults.add(this.cache.getResultPreview(site, pageNumber, resultNum));
+        });
+        child.setMarkup(incompleteResults);
     }
 
     public void scrape(){
