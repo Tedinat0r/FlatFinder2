@@ -8,6 +8,9 @@ import java.util.HashMap;
 public class FSFactory {
     HashMap<String, HashMap<String, FieldStrategy>> registry;
 
+    public FSFactory(HashMap<String, HashMap<String, FieldStrategy>> registry) {
+        this.registry = registry;
+    }
     public void addStrategy(String site, String field, FieldStrategy strategy) {
         if(!registry.containsKey(site)) {
             registry.put(site, new HashMap<>());

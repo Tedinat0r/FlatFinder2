@@ -19,5 +19,7 @@ public class PPTraverser extends Traverser  {
         inputMarkup = "";
     }
     @Override
-    public void compute(){}
+    public void compute(){
+        this.countDownLatch.countDown();
+    }
 }

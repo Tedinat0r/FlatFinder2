@@ -37,16 +37,16 @@ public class RPTraverser extends Traverser{
         ArrayList<String> entries = new ArrayList<>();
 
         //Dividing result page into the respective results
-        String[] results = this.inputMarkup.split(this.entryPattern);
+        /*String[] results = this.inputMarkup.split(this.entryPattern);
         for(int i = 0; i < results.length; i++){
             addResult(i+1, results[i]);
             for(String field : registry.keySet()){
                 String fieldData = registry.get(field).extractField(results[i]);
                 this.resultFields.get(i+1).put(field, fieldData);
             }
-        }
+        }*/
 
-
+        System.out.println("Beep boop, I be traversing");
         this.countDownLatch.countDown();
     }
 

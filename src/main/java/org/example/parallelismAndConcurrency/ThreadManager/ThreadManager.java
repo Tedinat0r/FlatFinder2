@@ -29,11 +29,13 @@ public class ThreadManager {
     public int treeID = -1;
     public int pageNumber = 0;
 
-    public ThreadManager(boolean isParent, boolean isChild, int treeID, HashMap<String, FieldStrategy> strategyRegistry){
-        this.hasChild = isParent ? true : false;
-        this.hasParent = isChild ? true : false;
+    public ThreadManager(boolean isParent, boolean isChild, int treeID, HashMap<String, FieldStrategy> strategyRegistry, String site) {
+        this.hasChild = isParent;
+        this.hasParent = isChild;
         this.treeID = treeID;
         this.strategyRegistry = strategyRegistry;
+        this.site = site;
+        this.forkJoinPool = new ForkJoinPool();
 
         if(isParent) {
             for (int i = 0; i < 4; i++) {
@@ -97,6 +99,7 @@ public class ThreadManager {
         return resultNumbers;
     }
 
+    public int getMarkUpSize(){return this.markup.size();}
     private void distributeMarkup(){}
 
     public void addTraverser(){};
